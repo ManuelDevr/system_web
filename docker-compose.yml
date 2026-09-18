@@ -1,0 +1,89 @@
+# -----------------------------------------------------------------------------
+# Ferreteria_web - Tienda Web / Catálogo Digital (Receptor de Webhooks)
+# Proyecto 2 del desacoplamiento. Desplegable en Dokploy.
+#
+# Servicios:
+#   - web-app    : Aplicación Laravel + Inertia/React (catálogo público)
+#   - web-db     : PostgreSQL 2 EXCLUSIVO de la Tienda Web
+#   - web-redis  : Redis (caché del catálogo + colas)
+#
+# SEGURIDAD: PostgreSQL y Redis NO publican puertos hacia la IP pública.
+# Solo red interna de Docker.
+# -----------------------------------------------------------------------------
+name: ferreteria-web
+
+services:
+  web-app:
+    build:
+      context: .
+      args:
+        - VITE_APP_NAME=Ferreteria Web
+    image: ferreteria-web-app:latest
+    restart: unless-stopped
+    working_dir: /var/www/html
+    ports:
+      - "8081:80" # Cambia el puerto público en Dokploy (NUNCA exponer 5432/6379)
+    volumes:
+      - web_storage:/var/www/html/storage/app
+    environment:
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      APP_DEBUG: "false"
+      APP_URL: https://www.cma-shop.com
+      APP_NAME: "Ferreteria Web"
+      DB_CONNECTION: pgsql
+      DB_HOST: web-db
+      DB_PORT: "5432"
+      DB_DATABASE: ferreteria_web
+      DB_USERNAME: web_user
+      DB_PASSWORD: ${WEB_DB_PASSWORD:?Defina WEB_DB_PASSWORD}
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      REDIS_HOST: web-redis
+      REDIS_PORT: "6379"
+      REDIS_CACHE_DB: "1"
+      CATALOG_CACHE_TTL: "300"
+      SYNC_ENABLED: "false"
+      SYNC_WEBHOOK_TOKEN: ${SYNC_WEBHOOK_TOKEN:?Defina SYNC_WEBHOOK_TOKEN}
+      SYNC_WEBHOOK_SECRET: ${SYNC_WEBHOOK_SECRET:?Defina SYNC_WEBHOOK_SECRET}
+      WHATSAPP_PHONE: ${WHATSAPP_PHONE:?Defina WHATSAPP_PHONE}
+      WHATSAPP_MESSAGE: ${WHATSAPP_MESSAGE:-Hola, me interesa este producto}
+      ENABLE_ONLINE_PAYMENT: "false"
+      ENABLE_DIRECT_CART: "false"
+      WHATSAPP_CHECKOUT_ONLY: "true"
+    depends_on:
+      web-db:
+        condition: service_healthy
+      web-redis:
+        condition: service_started
+
+  web-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - web_redis:/data
+    expose:
+      - "6379"
+
+  web-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ferreteria_web
+      POSTGRES_USER: web_user
+      POSTGRES_PASSWORD: ${WEB_DB_PASSWORD:?Defina WEB_DB_PASSWORD}
+    volumes:
+      - web_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U web_user -d ferreteria_web"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    expose:
+      - "5432"
+
+volumes:
+  web_pgdata:
+  web_redis:
+  web_storage:
