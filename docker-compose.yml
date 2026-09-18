@@ -21,8 +21,8 @@ services:
     image: ferreteria-web-app:latest
     restart: unless-stopped
     working_dir: /var/www/html
-    ports:
-      - "8081:80" # Cambia el puerto público en Dokploy (NUNCA exponer 5432/6379)
+    expose:
+      - "80" # Dokploy: Traefik rutea el dominio al puerto interno del contenedor
     volumes:
       - web_storage:/var/www/html/storage/app
     environment:
