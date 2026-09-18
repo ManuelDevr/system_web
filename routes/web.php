@@ -24,9 +24,221 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return redirect()->route('store.index');
-});
+// ====== TIENDA PÚBLICA (sin login) ======
+// Tienda Web ProLink Hardware
+    $categoriaCacheBackend = \Illuminate\Support\Facades\Cache::supportsTags() ? \Illuminate\Support\Facades\Cache::tags(['categories']) : \Illuminate\Support\Facades\Cache::store();
+    $categoriasConDestacado = static function () use ($categoriaCacheBackend) {
+        return $categoriaCacheBackend->remember('catalog:categories', config('sync.catalog_cache_ttl', 300), static function () {
+        $categorias = \App\Models\Categoria::select('id', 'nombre', 'parent_id')
+            ->with('children:id,nombre,parent_id')
+            ->whereNull('parent_id')
+            ->orderBy('nombre')
+            ->get();
+
+        $categoriaIds = $categorias->flatMap(function ($categoria) {
+            return $categoria->children->pluck('id')->push($categoria->id);
+        })->unique()->values();
+
+        $destacados = \App\Models\Producto::select('categoria_id', 'id', 'nombre', 'imagen_url', 'stock', 'unidad_medida')
+            ->where('estado', 'Activo')
+            ->whereIn('categoria_id', $categoriaIds)
+            ->orderBy('id')
+            ->get()
+            ->groupBy('categoria_id');
+
+        $categorias->each(function ($categoria) use ($destacados) {
+            $categoria->children->each(function ($child) use ($destacados) {
+                $productos = $destacados->get($child->id, collect())->take(5)->values();
+                $child->setAttribute('productos', $productos);
+                $child->setAttribute('destacado', $productos->first());
+            });
+            $productos = $destacados->get($categoria->id, collect())->take(5)->values();
+            $categoria->setAttribute('productos', $productos);
+            $categoria->setAttribute('destacado', $productos->first());
+        });
+
+            return $categorias;
+        });
+    };
+
+    Route::get('/', function () use ($categoriasConDestacado) { 
+        $categorias = $categoriasConDestacado();
+
+        $racksCategoria = \App\Models\Categoria::where('nombre', 'Racks TV')->first();
+        $racksProductos = collect();
+        if ($racksCategoria) {
+            $racksCategoriaIds = \App\Models\Categoria::where('parent_id', $racksCategoria->id)
+                ->pluck('id')
+                ->push($racksCategoria->id)
+                ->values();
+            $racksProductos = \App\Models\Producto::select('id', 'nombre', 'sku', 'stock', 'precio_venta', 'unidad_medida', 'marca_id', 'categoria_id', 'imagen_url')
+                ->with(['marca:id,nombre', 'categoria:id,nombre'])
+                ->whereIn('categoria_id', $racksCategoriaIds)
+                ->where('estado', 'Activo')
+                ->orderBy('nombre')
+                ->get();
+        }
+
+        $construccionCategoria = \App\Models\Categoria::where('nombre', 'Construccion')->first();
+        $construccionProductos = collect();
+        if ($construccionCategoria) {
+            $construccionCategoriaIds = \App\Models\Categoria::where('parent_id', $construccionCategoria->id)
+                ->pluck('id')
+                ->push($construccionCategoria->id)
+                ->values();
+            $construccionProductos = \App\Models\Producto::select('id', 'nombre', 'sku', 'stock', 'precio_venta', 'unidad_medida', 'marca_id', 'categoria_id', 'imagen_url')
+                ->with(['marca:id,nombre', 'categoria:id,nombre'])
+                ->whereIn('categoria_id', $construccionCategoriaIds)
+                ->where('estado', 'Activo')
+                ->orderBy('nombre')
+                ->get();
+        }
+
+        $productos = \App\Models\Producto::select('id', 'nombre', 'sku', 'stock', 'precio_venta', 'unidad_medida', 'marca_id', 'categoria_id', 'imagen_url')
+            ->with(['marca:id,nombre', 'categoria:id,nombre'])
+            ->where('estado', 'Activo')
+            ->orderBy('nombre')
+            ->take(8)
+            ->get();
+        return Inertia::render('Store/Index', [
+            'categorias' => $categorias,
+            'productos' => $productos,
+            'racksCategoria' => $racksCategoria,
+            'racksProductos' => $racksProductos,
+            'construccionCategoria' => $construccionCategoria,
+            'construccionProductos' => $construccionProductos,
+        ]); 
+    })->name('store.index');
+
+    Route::get('/catalogo', function (\Illuminate\Http\Request $request) use ($categoriasConDestacado) { 
+        $query = \App\Models\Producto::select('id', 'nombre', 'sku', 'codigo_barras', 'stock', 'precio_venta', 'tasa_descuento', 'unidad_medida', 'marca_id', 'categoria_id', 'imagen_url')
+            ->with(['marca:id,nombre', 'categoria:id,nombre'])
+            ->where('estado', 'Activo');
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nombre', 'ilike', "%{$search}%")
+                  ->orWhere('sku', 'ilike', "%{$search}%")
+                  ->orWhere('codigo_barras', 'ilike', "%{$search}%")
+                  ->orWhere('descripcion', 'ilike', "%{$search}%");
+            });
+        }
+
+        if ($attrs = $request->input('attrs', [])) {
+            $values = collect($attrs)->flatten()->filter(function ($v) {
+                return trim((string) $v) !== '';
+            })->values();
+            if ($values->isNotEmpty()) {
+                $query->where(function ($q) use ($values) {
+                    foreach ($values as $v) {
+                        $q->where(function ($qq) use ($v) {
+                            $qq->where('nombre', 'ilike', "%{$v}%")
+                               ->orWhere('descripcion', 'ilike', "%{$v}%");
+                        });
+                    }
+                });
+            }
+        }
+
+        if ($category = $request->input('category')) {
+            $categoryIds = [$category];
+            $children = \App\Models\Categoria::where('parent_id', $category)->pluck('id')->toArray();
+            $categoryIds = array_merge($categoryIds, $children);
+            $query->whereIn('categoria_id', $categoryIds);
+        }
+
+        $relevantBrandIds = (clone $query)->pluck('marca_id')->unique()->filter()->values();
+        $marcas = \App\Models\Marca::select('id', 'nombre')
+            ->whereIn('id', $relevantBrandIds)
+            ->orderBy('nombre')
+            ->get();
+
+        if ($brand = $request->input('brand')) {
+            $query->where('marca_id', $brand);
+        }
+
+        $priceStats = (clone $query)->select([\Illuminate\Support\Facades\DB::raw('MIN(precio_venta) as min_price, MAX(precio_venta) as max_price')])->first();
+        $priceRange = [
+            'min' => $priceStats->min_price ? (float) $priceStats->min_price : 0,
+            'max' => $priceStats->max_price ? (float) ceil($priceStats->max_price) : 2000,
+        ];
+
+        if ($minPrice = $request->input('min_price')) {
+            $query->where('precio_venta', '>=', (float) $minPrice);
+        }
+
+        if ($maxPrice = $request->input('max_price')) {
+            $query->where('precio_venta', '<=', (float) $maxPrice);
+        }
+
+        $sort = $request->input('sort');
+        if ($sort === 'price_asc') {
+            $query->orderBy('precio_venta');
+        } elseif ($sort === 'price_desc') {
+            $query->orderBy('precio_venta', 'desc');
+        } else {
+            $query->orderBy('nombre');
+        }
+
+        $categorias = $categoriasConDestacado();
+
+        // Caché en Redis (tags "catalog") para reducir lecturas a PostgreSQL 2.
+        // El ProductSyncController invalida la etiqueta al recibir un Webhook.
+        $cacheKey = 'catalog:' . md5(json_encode($request->only(['search', 'attrs', 'category', 'brand', 'min_price', 'max_price', 'sort', 'page'])));
+
+        $cacheBackend = \Illuminate\Support\Facades\Cache::supportsTags() ? \Illuminate\Support\Facades\Cache::tags(['catalog']) : \Illuminate\Support\Facades\Cache::store();
+
+        list($productos, $marcasCache, $priceRangeCache) = $cacheBackend
+            ->remember($cacheKey, config('sync.catalog_cache_ttl', 300), function () use ($query, $marcas, $priceRange) {
+                return [
+                    $query->paginate(12)->withQueryString(),
+                    $marcas->toArray(),
+                    $priceRange,
+                ];
+            });
+
+        return Inertia::render('Store/Catalog', [
+            'productos' => $productos,
+            'categorias' => $categorias,
+            'marcas' => collect($marcasCache),
+            'priceRange' => $priceRangeCache,
+        ]); 
+    })->name('store.catalog');
+
+    Route::get('/buscar', function (\Illuminate\Http\Request $request) {
+        $q = trim((string) $request->input('q'));
+        if (mb_strlen($q) < 1) {
+            return response()->json([]);
+        }
+        $productos = \App\Models\Producto::select('id', 'nombre', 'sku', 'stock', 'precio_venta', 'unidad_medida', 'marca_id', 'imagen_url')
+            ->with(['marca:id,nombre'])
+            ->where('estado', 'Activo')
+            ->where(function ($query) use ($q) {
+                $query->where('nombre', 'ilike', "%{$q}%")
+                      ->orWhere('sku', 'ilike', "%{$q}%")
+                      ->orWhere('codigo_barras', 'ilike', "%{$q}%");
+            })
+            ->limit(6)
+            ->get();
+        return response()->json($productos);
+    })->name('store.search');
+
+    Route::get('/producto/{producto}', function (\App\Models\Producto $producto) use ($categoriasConDestacado) {
+        $producto->load(['categoria:id,nombre,parent_id', 'categoria.parent:id,nombre', 'marca:id,nombre', 'conversiones.unidad:id,nombre,abreviatura']);
+        $similares = \App\Models\Producto::select('id', 'nombre', 'sku', 'stock', 'precio_venta', 'tasa_descuento', 'unidad_medida', 'marca_id', 'categoria_id', 'imagen_url')
+            ->with(['marca:id,nombre'])
+            ->where('categoria_id', $producto->categoria_id)
+            ->where('id', '!=', $producto->id)
+            ->where('estado', 'Activo')
+            ->limit(4)
+            ->get();
+        $categorias = $categoriasConDestacado();
+        return Inertia::render('Store/Detail', [
+            'producto' => $producto,
+            'similares' => $similares,
+            'categorias' => $categorias
+        ]);
+    })->name('store.detail');
 
 Route::middleware(['auth'])->group(function () {
     
@@ -183,220 +395,11 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// ====== TIENDA PÚBLICA (sin login) ======
-// Tienda Web ProLink Hardware
-    $categoriaCacheBackend = \Illuminate\Support\Facades\Cache::supportsTags() ? \Illuminate\Support\Facades\Cache::tags(['categories']) : \Illuminate\Support\Facades\Cache::store();
-    $categoriasConDestacado = static function () use ($categoriaCacheBackend) {
-        return $categoriaCacheBackend->remember('catalog:categories', config('sync.catalog_cache_ttl', 300), static function () {
-        $categorias = \App\Models\Categoria::select('id', 'nombre', 'parent_id')
-            ->with('children:id,nombre,parent_id')
-            ->whereNull('parent_id')
-            ->orderBy('nombre')
-            ->get();
 
-        $categoriaIds = $categorias->flatMap(function ($categoria) {
-            return $categoria->children->pluck('id')->push($categoria->id);
-        })->unique()->values();
-
-        $destacados = \App\Models\Producto::select('categoria_id', 'id', 'nombre', 'imagen_url', 'stock', 'unidad_medida')
-            ->where('estado', 'Activo')
-            ->whereIn('categoria_id', $categoriaIds)
-            ->orderBy('id')
-            ->get()
-            ->groupBy('categoria_id');
-
-        $categorias->each(function ($categoria) use ($destacados) {
-            $categoria->children->each(function ($child) use ($destacados) {
-                $productos = $destacados->get($child->id, collect())->take(5)->values();
-                $child->setAttribute('productos', $productos);
-                $child->setAttribute('destacado', $productos->first());
-            });
-            $productos = $destacados->get($categoria->id, collect())->take(5)->values();
-            $categoria->setAttribute('productos', $productos);
-            $categoria->setAttribute('destacado', $productos->first());
-        });
-
-            return $categorias;
-        });
-    };
-
-    Route::get('/tienda-web', function () use ($categoriasConDestacado) { 
-        $categorias = $categoriasConDestacado();
-
-        $racksCategoria = \App\Models\Categoria::where('nombre', 'Racks TV')->first();
-        $racksProductos = collect();
-        if ($racksCategoria) {
-            $racksCategoriaIds = \App\Models\Categoria::where('parent_id', $racksCategoria->id)
-                ->pluck('id')
-                ->push($racksCategoria->id)
-                ->values();
-            $racksProductos = \App\Models\Producto::select('id', 'nombre', 'sku', 'stock', 'precio_venta', 'unidad_medida', 'marca_id', 'categoria_id', 'imagen_url')
-                ->with(['marca:id,nombre', 'categoria:id,nombre'])
-                ->whereIn('categoria_id', $racksCategoriaIds)
-                ->where('estado', 'Activo')
-                ->orderBy('nombre')
-                ->get();
-        }
-
-        $construccionCategoria = \App\Models\Categoria::where('nombre', 'Construccion')->first();
-        $construccionProductos = collect();
-        if ($construccionCategoria) {
-            $construccionCategoriaIds = \App\Models\Categoria::where('parent_id', $construccionCategoria->id)
-                ->pluck('id')
-                ->push($construccionCategoria->id)
-                ->values();
-            $construccionProductos = \App\Models\Producto::select('id', 'nombre', 'sku', 'stock', 'precio_venta', 'unidad_medida', 'marca_id', 'categoria_id', 'imagen_url')
-                ->with(['marca:id,nombre', 'categoria:id,nombre'])
-                ->whereIn('categoria_id', $construccionCategoriaIds)
-                ->where('estado', 'Activo')
-                ->orderBy('nombre')
-                ->get();
-        }
-
-        $productos = \App\Models\Producto::select('id', 'nombre', 'sku', 'stock', 'precio_venta', 'unidad_medida', 'marca_id', 'categoria_id', 'imagen_url')
-            ->with(['marca:id,nombre', 'categoria:id,nombre'])
-            ->where('estado', 'Activo')
-            ->orderBy('nombre')
-            ->take(8)
-            ->get();
-        return Inertia::render('Store/Index', [
-            'categorias' => $categorias,
-            'productos' => $productos,
-            'racksCategoria' => $racksCategoria,
-            'racksProductos' => $racksProductos,
-            'construccionCategoria' => $construccionCategoria,
-            'construccionProductos' => $construccionProductos,
-        ]); 
-    })->name('store.index');
-
-    Route::get('/tienda-web/catalogo', function (\Illuminate\Http\Request $request) use ($categoriasConDestacado) { 
-        $query = \App\Models\Producto::select('id', 'nombre', 'sku', 'codigo_barras', 'stock', 'precio_venta', 'tasa_descuento', 'unidad_medida', 'marca_id', 'categoria_id', 'imagen_url')
-            ->with(['marca:id,nombre', 'categoria:id,nombre'])
-            ->where('estado', 'Activo');
-
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('nombre', 'ilike', "%{$search}%")
-                  ->orWhere('sku', 'ilike', "%{$search}%")
-                  ->orWhere('codigo_barras', 'ilike', "%{$search}%")
-                  ->orWhere('descripcion', 'ilike', "%{$search}%");
-            });
-        }
-
-        if ($attrs = $request->input('attrs', [])) {
-            $values = collect($attrs)->flatten()->filter(function ($v) {
-                return trim((string) $v) !== '';
-            })->values();
-            if ($values->isNotEmpty()) {
-                $query->where(function ($q) use ($values) {
-                    foreach ($values as $v) {
-                        $q->where(function ($qq) use ($v) {
-                            $qq->where('nombre', 'ilike', "%{$v}%")
-                               ->orWhere('descripcion', 'ilike', "%{$v}%");
-                        });
-                    }
-                });
-            }
-        }
-
-        if ($category = $request->input('category')) {
-            $categoryIds = [$category];
-            $children = \App\Models\Categoria::where('parent_id', $category)->pluck('id')->toArray();
-            $categoryIds = array_merge($categoryIds, $children);
-            $query->whereIn('categoria_id', $categoryIds);
-        }
-
-        $relevantBrandIds = (clone $query)->pluck('marca_id')->unique()->filter()->values();
-        $marcas = \App\Models\Marca::select('id', 'nombre')
-            ->whereIn('id', $relevantBrandIds)
-            ->orderBy('nombre')
-            ->get();
-
-        if ($brand = $request->input('brand')) {
-            $query->where('marca_id', $brand);
-        }
-
-        $priceStats = (clone $query)->select([\Illuminate\Support\Facades\DB::raw('MIN(precio_venta) as min_price, MAX(precio_venta) as max_price')])->first();
-        $priceRange = [
-            'min' => $priceStats->min_price ? (float) $priceStats->min_price : 0,
-            'max' => $priceStats->max_price ? (float) ceil($priceStats->max_price) : 2000,
-        ];
-
-        if ($minPrice = $request->input('min_price')) {
-            $query->where('precio_venta', '>=', (float) $minPrice);
-        }
-
-        if ($maxPrice = $request->input('max_price')) {
-            $query->where('precio_venta', '<=', (float) $maxPrice);
-        }
-
-        $sort = $request->input('sort');
-        if ($sort === 'price_asc') {
-            $query->orderBy('precio_venta');
-        } elseif ($sort === 'price_desc') {
-            $query->orderBy('precio_venta', 'desc');
-        } else {
-            $query->orderBy('nombre');
-        }
-
-        $categorias = $categoriasConDestacado();
-
-        // Caché en Redis (tags "catalog") para reducir lecturas a PostgreSQL 2.
-        // El ProductSyncController invalida la etiqueta al recibir un Webhook.
-        $cacheKey = 'catalog:' . md5(json_encode($request->only(['search', 'attrs', 'category', 'brand', 'min_price', 'max_price', 'sort', 'page'])));
-
-        $cacheBackend = \Illuminate\Support\Facades\Cache::supportsTags() ? \Illuminate\Support\Facades\Cache::tags(['catalog']) : \Illuminate\Support\Facades\Cache::store();
-
-        list($productos, $marcasCache, $priceRangeCache) = $cacheBackend
-            ->remember($cacheKey, config('sync.catalog_cache_ttl', 300), function () use ($query, $marcas, $priceRange) {
-                return [
-                    $query->paginate(12)->withQueryString(),
-                    $marcas->toArray(),
-                    $priceRange,
-                ];
-            });
-
-        return Inertia::render('Store/Catalog', [
-            'productos' => $productos,
-            'categorias' => $categorias,
-            'marcas' => collect($marcasCache),
-            'priceRange' => $priceRangeCache,
-        ]); 
-    })->name('store.catalog');
-
-    Route::get('/tienda-web/buscar', function (\Illuminate\Http\Request $request) {
-        $q = trim((string) $request->input('q'));
-        if (mb_strlen($q) < 1) {
-            return response()->json([]);
-        }
-        $productos = \App\Models\Producto::select('id', 'nombre', 'sku', 'stock', 'precio_venta', 'unidad_medida', 'marca_id', 'imagen_url')
-            ->with(['marca:id,nombre'])
-            ->where('estado', 'Activo')
-            ->where(function ($query) use ($q) {
-                $query->where('nombre', 'ilike', "%{$q}%")
-                      ->orWhere('sku', 'ilike', "%{$q}%")
-                      ->orWhere('codigo_barras', 'ilike', "%{$q}%");
-            })
-            ->limit(6)
-            ->get();
-        return response()->json($productos);
-    })->name('store.search');
-
-    Route::get('/tienda-web/producto/{producto}', function (\App\Models\Producto $producto) use ($categoriasConDestacado) {
-        $producto->load(['categoria:id,nombre,parent_id', 'categoria.parent:id,nombre', 'marca:id,nombre', 'conversiones.unidad:id,nombre,abreviatura']);
-        $similares = \App\Models\Producto::select('id', 'nombre', 'sku', 'stock', 'precio_venta', 'tasa_descuento', 'unidad_medida', 'marca_id', 'categoria_id', 'imagen_url')
-            ->with(['marca:id,nombre'])
-            ->where('categoria_id', $producto->categoria_id)
-            ->where('id', '!=', $producto->id)
-            ->where('estado', 'Activo')
-            ->limit(4)
-            ->get();
-        $categorias = $categoriasConDestacado();
-        return Inertia::render('Store/Detail', [
-            'producto' => $producto,
-            'similares' => $similares,
-            'categorias' => $categorias
-        ]);
-    })->name('store.detail');
+// Redirecciones de compatibilidad: URLs publicas viejas /tienda-web* hacia las nuevas rutas raiz.
+Route::redirect('/tienda-web', '/', 301);
+Route::redirect('/tienda-web/catalogo', '/catalogo', 301);
+Route::redirect('/tienda-web/buscar', '/buscar', 301);
+Route::redirect('/tienda-web/producto/{producto}', '/producto/{producto}', 301);
 
 require __DIR__.'/auth.php';

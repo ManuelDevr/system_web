@@ -55,7 +55,7 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/tienda-web/buscar?q=${encodeURIComponent(searchQuery.trim())}`, { signal: controller.signal });
+        const res = await fetch(`${route('store.search')}?q=${encodeURIComponent(searchQuery.trim())}`, { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
           setSuggestions(data);
