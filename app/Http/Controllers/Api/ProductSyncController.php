@@ -79,6 +79,8 @@ class ProductSyncController extends Controller
             'unidad_medida'  => 'sometimes|nullable|string|max:50',
             'codigo_barras'  => 'sometimes|nullable|string|max:50',
             'imagen_url'     => 'sometimes|nullable|string',
+            'imagenes'       => 'sometimes|nullable|array',
+            'imagenes.*'     => 'sometimes|string',
             'video_url'      => 'sometimes|nullable|string',
             'mostrar_video'  => 'sometimes|boolean',
             'disponible'     => 'sometimes|boolean',
@@ -100,10 +102,14 @@ class ProductSyncController extends Controller
         }
 
         // 3) Limpiar/actualizar de inmediato la caché del catálogo en Redis.
-        if (Cache::supportsTags()) {
-            Cache::tags(['catalog', 'categories'])->flush();
-        } else {
-            Cache::flush();
+        try {
+            if (Cache::supportsTags()) {
+                Cache::tags(['catalog', 'categories'])->flush();
+            } else {
+                Cache::flush();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[ProductSync] No se pudo limpiar la caché tras sincronizar SKU '.$payload['sku'].': '.$e->getMessage());
         }
 
         return response()->json(['status' => 'ok', 'sku' => $payload['sku']], 200);
@@ -167,12 +173,23 @@ class ProductSyncController extends Controller
             'marca_id'       => $marcaId,
             'unidad_medida'  => $payload['unidad_medida'] ?? 'Unidad',
             'codigo_barras'  => $payload['codigo_barras'] ?? null,
-            'imagen_url'     => $payload['imagen_url'] ?? null,
-            'video_url'      => $payload['video_url'] ?? null,
+            'imagen_url'     => ($payload['imagen_url'] ?? null) !== null ? mb_substr($payload['imagen_url'], 0, 255) : null,
+            'imagenes'       => ($payload['imagenes'] ?? null) !== null
+                ? array_values(array_filter(array_map(
+                    fn ($url) => is_string($url) ? mb_substr($url, 0, 255) : '',
+                    (array) $payload['imagenes']
+                )))
+                : null,
+            'video_url'      => ($payload['video_url'] ?? null) !== null ? mb_substr($payload['video_url'], 0, 500) : null,
             'mostrar_video'  => (bool) ($payload['mostrar_video'] ?? false),
             'estado'         => $payload['disponible'] ? 'Activo' : 'Inactivo',
         ];
 
-        Producto::updateOrCreate(['sku' => $payload['sku']], $data);
+        $producto = Producto::withTrashed()->firstOrNew(['sku' => $payload['sku']]);
+        $producto->fill($data);
+        if ($producto->trashed()) {
+            $producto->deleted_at = null;
+        }
+        $producto->save();
     }
 }
