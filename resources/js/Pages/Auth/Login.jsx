@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
 import Checkbox from '@/Components/Checkbox';
 import InputError from '@/Components/InputError';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function Login({ status, canResetPassword }) {
     const [showPassword, setShowPassword] = useState(false);
@@ -11,6 +11,7 @@ export default function Login({ status, canResetPassword }) {
         email: '',
         password: '',
         remember: false,
+        website: '',
     });
 
     useEffect(() => {
@@ -29,19 +30,36 @@ export default function Login({ status, canResetPassword }) {
             <Head title="Iniciar Sesión" />
 
             {status && (
-                <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex gap-3 items-center animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                <div className="animate-in fade-in slide-in-from-top-2 mb-6 flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 duration-300">
+                    <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600">
                         <AlertCircle size={18} />
                     </div>
-                    <p className="text-sm font-bold text-emerald-800 uppercase tracking-tighter">{status}</p>
+                    <p className="text-sm font-bold uppercase tracking-tighter text-emerald-800">
+                        {status}
+                    </p>
                 </div>
             )}
 
             <form onSubmit={submit} className="space-y-6">
+                {/* Honeypot anti-bot: el campo "website" es invisible para
+                    humanos (un bot lo rellena robóticamente). El backend lo
+                    rechaza con validación max:0. */}
+                <input
+                    type="text"
+                    name="website"
+                    value={data.website}
+                    onChange={(e) => setData('website', e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -left-[9999px] h-px w-px opacity-0"
+                />
                 <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Correo Electrónico</label>
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none group-focus-within:text-indigo-600 transition-colors">
+                    <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        Correo Electrónico
+                    </label>
+                    <div className="group relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 transition-colors group-focus-within:text-indigo-600">
                             <Mail size={18} className="text-slate-400" />
                         </div>
                         <input
@@ -49,19 +67,21 @@ export default function Login({ status, canResetPassword }) {
                             type="email"
                             name="email"
                             value={data.email}
-                            className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-0 rounded-2xl text-slate-800 font-medium transition-all shadow-sm group-hover:bg-slate-100 focus:bg-white"
+                            className="block w-full rounded-2xl border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 font-medium text-slate-800 shadow-sm transition-all focus:border-indigo-500 focus:bg-white focus:ring-0 group-hover:bg-slate-100"
                             autoComplete="username"
                             onChange={(e) => setData('email', e.target.value)}
                             placeholder="nombre@ejemplo.com"
                             required
                         />
                     </div>
-                    <InputError message={errors.email} className="mt-2 ml-1" />
+                    <InputError message={errors.email} className="ml-1 mt-2" />
                 </div>
 
                 <div>
-                    <div className="flex justify-between items-center mb-2 ml-1">
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Contraseña</label>
+                    <div className="mb-2 ml-1 flex items-center justify-between">
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            Contraseña
+                        </label>
                         {/* {canResetPassword && (
                             <Link
                                 href={route('password.request')}
@@ -71,8 +91,8 @@ export default function Login({ status, canResetPassword }) {
                             </Link>
                         )} */}
                     </div>
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none group-focus-within:text-indigo-600 transition-colors">
+                    <div className="group relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 transition-colors group-focus-within:text-indigo-600">
                             <Lock size={18} className="text-slate-400" />
                         </div>
                         <input
@@ -80,43 +100,56 @@ export default function Login({ status, canResetPassword }) {
                             type={showPassword ? 'text' : 'password'}
                             name="password"
                             value={data.password}
-                            className="block w-full pl-12 pr-12 py-3.5 bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-0 rounded-2xl text-slate-800 font-medium transition-all shadow-sm group-hover:bg-slate-100 focus:bg-white"
+                            className="block w-full rounded-2xl border-slate-200 bg-slate-50 py-3.5 pl-12 pr-12 font-medium text-slate-800 shadow-sm transition-all focus:border-indigo-500 focus:bg-white focus:ring-0 group-hover:bg-slate-100"
                             autoComplete="current-password"
-                            onChange={(e) => setData('password', e.target.value)}
+                            onChange={(e) =>
+                                setData('password', e.target.value)
+                            }
                             placeholder="••••••••"
                             required
                         />
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                            className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 transition-colors hover:text-slate-600"
                         >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            {showPassword ? (
+                                <EyeOff size={18} />
+                            ) : (
+                                <Eye size={18} />
+                            )}
                         </button>
                     </div>
-                    <InputError message={errors.password} className="mt-2 ml-1" />
+                    <InputError
+                        message={errors.password}
+                        className="ml-1 mt-2"
+                    />
                 </div>
 
                 <div className="flex items-center justify-between">
-                    <label className="flex items-center cursor-pointer group">
+                    <label className="group flex cursor-pointer items-center">
                         <Checkbox
                             name="remember"
                             checked={data.remember}
-                            onChange={(e) => setData('remember', e.target.checked)}
-                            className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                            onChange={(e) =>
+                                setData('remember', e.target.checked)
+                            }
+                            className="h-5 w-5 rounded-lg border-slate-300 text-indigo-600 transition-all focus:ring-indigo-500"
                         />
-                        <span className="ms-3 text-xs font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-700 transition-colors">Recordarme</span>
+                        <span className="ms-3 text-xs font-bold uppercase tracking-widest text-slate-500 transition-colors group-hover:text-slate-700">
+                            Recordarme
+                        </span>
                     </label>
                 </div>
 
                 <div className="pt-2">
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={processing}
-                        className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50"
+                        className="flex w-full items-center justify-center gap-3 rounded-2xl bg-indigo-600 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-50"
                     >
                         {processing ? (
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
                         ) : (
                             <>
                                 <LogIn size={18} />

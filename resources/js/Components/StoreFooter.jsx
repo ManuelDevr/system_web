@@ -35,6 +35,32 @@ export default function StoreFooter() {
                             </Link>
                         </li>
                     </ul>
+                    <ul className="mt-4 space-y-2 border-t border-white/10 pt-3 text-xs">
+                        <li>
+                            <Link
+                                href={route('store.privacidad')}
+                                className="transition-colors hover:text-white"
+                            >
+                                Política de Privacidad
+                            </Link>
+                        </li>
+                        <li>
+                            <Link
+                                href={route('store.terminos')}
+                                className="transition-colors hover:text-white"
+                            >
+                                Términos y Condiciones
+                            </Link>
+                        </li>
+                        <li>
+                            <Link
+                                href={route('store.aviso-legal')}
+                                className="transition-colors hover:text-white"
+                            >
+                                Aviso Legal
+                            </Link>
+                        </li>
+                    </ul>
                 </div>
                 <div>
                     <h5 className="mb-3 text-xs font-bold uppercase text-[#fea619]">

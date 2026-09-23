@@ -1,6 +1,7 @@
 import { formatStock } from '@/Utils/format';
 import { Link } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import StoreCookieBanner from '@/Components/StoreCookieBanner';
 
 const iconOf = (cat) => {
     const n = String(cat?.nombre || '').toLowerCase();
@@ -808,6 +809,8 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                     </div>
                 </nav>
             </header>
+
+            <StoreCookieBanner />
         </>
     );
 }

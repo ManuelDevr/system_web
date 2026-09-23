@@ -223,6 +223,26 @@ use Inertia\Inertia;
         return response()->json($productos);
     })->name('store.search');
 
+    $legalContent = function (string $tipo) use ($categoriasConDestacado) {
+        $categorias = $categoriasConDestacado();
+        return Inertia::render('Store/Legal', [
+            'tipo' => $tipo,
+            'categorias' => $categorias,
+        ]);
+    };
+
+    Route::get('/privacidad', function () use ($legalContent) {
+        return $legalContent('privacidad');
+    })->name('store.privacidad');
+
+    Route::get('/terminos', function () use ($legalContent) {
+        return $legalContent('terminos');
+    })->name('store.terminos');
+
+    Route::get('/aviso-legal', function () use ($legalContent) {
+        return $legalContent('aviso-legal');
+    })->name('store.aviso-legal');
+
     Route::get('/producto/{producto}', function (\App\Models\Producto $producto) use ($categoriasConDestacado) {
         $producto->load(['categoria:id,nombre,parent_id', 'categoria.parent:id,nombre', 'marca:id,nombre', 'conversiones.unidad:id,nombre,abreviatura']);
         $similares = \App\Models\Producto::select('id', 'nombre', 'sku', 'stock', 'precio_venta', 'tasa_descuento', 'unidad_medida', 'marca_id', 'categoria_id', 'imagen_url')
