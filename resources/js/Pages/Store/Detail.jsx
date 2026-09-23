@@ -51,6 +51,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
     const [favorited, setFavorited] = useState(false);
     const [copied, setCopied] = useState(false);
     const thumbsRef = useRef(null);
+    const galleryTouchX = useRef(null);
 
     const resolveImg = (url) => {
         if (!url) return url;
@@ -84,6 +85,17 @@ export default function StoreDetail({ producto, similares, categorias }) {
         setActiveMedia(
             (i) => (i + dir + galleryMedia.length) % galleryMedia.length,
         );
+
+    const onGalleryTouchStart = (e) => {
+        galleryTouchX.current = e.touches[0].clientX;
+    };
+
+    const onGalleryTouchEnd = (e) => {
+        if (galleryTouchX.current === null) return;
+        const dx = e.changedTouches[0].clientX - galleryTouchX.current;
+        if (Math.abs(dx) > 50) goMedia(dx < 0 ? 1 : -1);
+        galleryTouchX.current = null;
+    };
     const scrollThumbs = (dir) => {
         if (thumbsRef.current)
             thumbsRef.current.scrollBy({ top: dir * 120, behavior: 'smooth' });
@@ -216,7 +228,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                     className="mb-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm transition-colors hover:border-[#fea619]/40 hover:bg-[#fea619]/10"
                                     aria-label="Ver miniaturas anteriores"
                                 >
-                                    <span className="material-symbols-outlined text-base text-slate-500">
+                                    <span translate="no" aria-hidden="true" className="material-symbols-outlined text-base text-slate-500">
                                         expand_less
                                     </span>
                                 </button>
@@ -238,7 +250,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                             {m.type === 'video' ? (
                                                 <span className="absolute inset-0 flex items-center justify-center bg-black">
                                                     <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/25 bg-white/15 transition-colors group-hover/thumb:border-[#fea619] group-hover/thumb:bg-[#fea619]">
-                                                        <span className="material-symbols-outlined text-lg text-white group-hover/thumb:text-black">
+                                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-lg text-white group-hover/thumb:text-black">
                                                             play_arrow
                                                         </span>
                                                     </span>
@@ -262,14 +274,19 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                     className="mt-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm transition-colors hover:border-[#fea619]/40 hover:bg-[#fea619]/10"
                                     aria-label="Ver más miniaturas"
                                 >
-                                    <span className="material-symbols-outlined text-base text-slate-500">
+                                    <span translate="no" aria-hidden="true" className="material-symbols-outlined text-base text-slate-500">
                                         expand_more
                                     </span>
                                 </button>
                             </div>
 
                             {/* Columna Derecha: Visor Principal */}
-                            <div className="relative flex min-h-[400px] flex-1 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <div
+                                className="relative flex min-h-[260px] flex-1 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm select-none sm:min-h-[400px]"
+                                onTouchStart={onGalleryTouchStart}
+                                onTouchEnd={onGalleryTouchEnd}
+                                onTouchCancel={onGalleryTouchEnd}
+                            >
                                 {activeSlide.type === 'video' ? (
                                     <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
                                         <iframe
@@ -285,7 +302,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                     <img
                                         key={activeMedia}
                                         src={activeSlide.url}
-                                        className="animate-in fade-in max-h-[400px] object-contain transition-transform duration-300 duration-500 hover:scale-105"
+                                        className="animate-in fade-in max-h-[400px] max-w-full object-contain transition-transform duration-300 hover:scale-105"
                                         alt={producto?.nombre}
                                     />
                                 )}
@@ -301,7 +318,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                                 : 'border-slate-200 text-slate-400 hover:text-[#ef4444]'
                                         }`}
                                     >
-                                        <span className="material-symbols-outlined text-xl">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl">
                                             {favorited
                                                 ? 'favorite'
                                                 : 'favorite_border'}
@@ -316,7 +333,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                                 : 'border-slate-200 text-slate-400 hover:text-[#855300]'
                                         }`}
                                     >
-                                        <span className="material-symbols-outlined text-xl">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl">
                                             {copied ? 'check' : 'share'}
                                         </span>
                                     </button>
@@ -330,7 +347,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                             aria-label="Siguiente foto"
                                             className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:border-[#fea619] hover:bg-[#fea619] active:scale-95"
                                         >
-                                            <span className="material-symbols-outlined text-xl font-bold text-black">
+                                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold text-black">
                                                 chevron_right
                                             </span>
                                         </button>
@@ -340,7 +357,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                             aria-label="Foto anterior"
                                             className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:border-[#fea619] hover:bg-[#fea619] active:scale-95"
                                         >
-                                            <span className="material-symbols-outlined text-xl font-bold text-black">
+                                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold text-black">
                                                 chevron_left
                                             </span>
                                         </button>
@@ -636,7 +653,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                     <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                         <div className="mb-5 flex items-center gap-2">
                             <span className="inline-flex items-center gap-2 rounded-full border border-[#fea619]/30 bg-[#fea619]/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-[#855300]">
-                                <span className="material-symbols-outlined text-sm">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                     play_circle
                                 </span>
                                 Video
@@ -659,7 +676,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                             ) : (
                                 <div className="px-6 py-16 text-center">
                                     <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/10 transition-transform group-hover:scale-110">
-                                        <span className="material-symbols-outlined text-4xl text-white/80">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-4xl text-white/80">
                                             play_arrow
                                         </span>
                                     </div>
@@ -683,7 +700,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                         <div className="mb-6 flex items-center justify-between gap-4">
                             <div>
                                 <span className="inline-flex items-center gap-2 rounded-full border border-[#fea619]/30 bg-[#fea619]/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-[#855300]">
-                                    <span className="material-symbols-outlined text-sm">
+                                    <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                         auto_awesome
                                     </span>
                                     Productos Relacionados
@@ -699,7 +716,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                 className="flex shrink-0 items-center gap-1.5 text-sm font-bold text-[#ef4444] transition-all hover:gap-2.5 hover:underline"
                             >
                                 Ver más{' '}
-                                <span className="material-symbols-outlined text-base">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-base">
                                     chevron_right
                                 </span>
                             </Link>
@@ -712,7 +729,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                 }
                                 className="absolute -left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                             >
-                                <span className="material-symbols-outlined text-xl font-bold text-black">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold text-black">
                                     chevron_left
                                 </span>
                             </button>
@@ -775,7 +792,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                                         )}
                                                         className="rounded-xl bg-black p-2.5 text-white transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                                                     >
-                                                        <span className="material-symbols-outlined text-sm">
+                                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                                             visibility
                                                         </span>
                                                     </Link>
@@ -792,7 +809,7 @@ export default function StoreDetail({ producto, similares, categorias }) {
                                 }
                                 className="absolute -right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                             >
-                                <span className="material-symbols-outlined text-xl font-bold text-black">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold text-black">
                                     chevron_right
                                 </span>
                             </button>

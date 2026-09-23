@@ -62,7 +62,7 @@ export default function StoreFooter() {
                             </span>
                         </li>
                         <li className="flex items-start gap-2">
-                            <span className="material-symbols-outlined mt-0.5 text-lg text-[#fea619]">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined mt-0.5 text-lg text-[#fea619]">
                                 mail
                             </span>
                             <span>
@@ -73,7 +73,7 @@ export default function StoreFooter() {
                             </span>
                         </li>
                         <li className="flex items-start gap-2">
-                            <span className="material-symbols-outlined mt-0.5 text-lg text-[#fea619]">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined mt-0.5 text-lg text-[#fea619]">
                                 schedule
                             </span>
                             <span>

@@ -25,6 +25,8 @@ export default function StoreIndex({
     const categoriesCarouselRef = useRef(null);
     const featuredCarouselRef = useRef(null);
     const ferreteriaCarouselRef = useRef(null);
+    const heroTouchX = useRef(null);
+    const heroTouchY = useRef(null);
 
     const scrollSlider = (ref, dir) => {
         const el = ref.current;
@@ -89,6 +91,25 @@ export default function StoreIndex({
         { id: 'truper', name: 'Truper', logo: truperLogo },
     ];
 
+    const goSlide = (dir) =>
+        setCurrentSlide((prev) => (prev + dir + slides.length) % slides.length);
+
+    const onHeroTouchStart = (e) => {
+        heroTouchX.current = e.touches[0].clientX;
+        heroTouchY.current = e.touches[0].clientY;
+    };
+
+    const onHeroTouchEnd = (e) => {
+        if (heroTouchX.current === null) return;
+        const dx = e.changedTouches[0].clientX - heroTouchX.current;
+        const dy = e.changedTouches[0].clientY - heroTouchY.current;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+            goSlide(dx < 0 ? 1 : -1);
+        }
+        heroTouchX.current = null;
+        heroTouchY.current = null;
+    };
+
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -126,43 +147,47 @@ export default function StoreIndex({
             <StoreHeader categorias={categorias} />
             <main className="relative">
                 {/* Carrusel Hero */}
-                <section className="relative flex min-h-[520px] items-center overflow-hidden bg-black pt-0 md:min-h-[600px] lg:min-h-[700px]">
+                <section
+                    className="relative flex min-h-[440px] items-center overflow-hidden bg-black select-none md:min-h-[560px] lg:min-h-[680px]"
+                    onTouchStart={onHeroTouchStart}
+                    onTouchEnd={onHeroTouchEnd}
+                >
                     {slides.map((slide, idx) => (
                         <div
                             key={idx}
                             className={`absolute inset-0 transition-all duration-1000 ease-in-out ${idx === currentSlide ? 'z-10 scale-100 opacity-100' : 'z-0 scale-105 opacity-0'}`}
                         >
                             <div
-                                className="duration-10000 absolute inset-0 scale-105 transform bg-cover bg-center transition-transform ease-out hover:scale-100"
+                                className="duration-10000 absolute inset-0 scale-105 bg-cover bg-center transition-transform ease-out hover:scale-100"
                                 style={{
                                     backgroundImage: `url('${slide.image}')`,
                                 }}
                             ></div>
-                            <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/30"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/30 md:via-black/60"></div>
                         </div>
                     ))}
 
-                    <div className="relative z-20 mx-auto w-full max-w-[1280px] px-5 py-12 md:px-6 md:py-16">
+                    <div className="relative z-20 mx-auto w-full max-w-[1280px] px-5 py-10 md:px-6 md:py-16">
                         <div className="max-w-2xl text-white">
-                            <div className="mb-6 inline-flex animate-bounce items-center gap-2 rounded bg-[#fea619] px-4 py-1.5 text-xs font-black uppercase tracking-widest text-black shadow-lg">
-                                <span className="material-symbols-outlined text-[16px]">
+                            <div className="mb-5 inline-flex animate-bounce items-center gap-2 rounded bg-[#fea619] px-3 py-1 text-[10px] font-black uppercase tracking-widest text-black shadow-lg sm:px-4 sm:py-1.5 sm:text-xs">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-[14px]">
                                     verified
                                 </span>
                                 {slides[currentSlide].tag}
                             </div>
-                            <h1 className="mb-6 text-3xl font-black leading-[1.1] text-white drop-shadow-md transition-all duration-700 sm:text-5xl">
+                            <h1 className="mb-4 text-[26px] font-black leading-[1.1] text-white drop-shadow-md transition-all duration-700 sm:text-3xl md:text-5xl">
                                 {slides[currentSlide].title}
                             </h1>
-                            <p className="mb-8 max-w-xl text-lg leading-relaxed text-slate-200">
+                            <p className="mb-7 max-w-xl text-sm leading-relaxed text-slate-200 sm:text-base md:text-lg">
                                 {slides[currentSlide].desc}
                             </p>
-                            <div className="flex flex-wrap gap-4">
+                            <div className="flex flex-wrap gap-3 md:gap-4">
                                 <Link
                                     href={route('store.catalog')}
                                     className="h-13 flex items-center gap-2 rounded-xl bg-[#fea619] px-8 text-sm font-extrabold text-black shadow-xl shadow-[#fea619]/20 transition-all hover:scale-105 hover:bg-[#ffb95f] active:scale-95"
                                 >
                                     Explorar Catálogo{' '}
-                                    <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
+                                    <span translate="no" aria-hidden="true" className="material-symbols-outlined transition-transform group-hover:translate-x-1">
                                         bolt
                                     </span>
                                 </Link>
@@ -181,8 +206,30 @@ export default function StoreIndex({
                         </div>
                     </div>
 
+                    {/* Flechas de Carrusel */}
+                    <button
+                        type="button"
+                        aria-label="Anterior"
+                        onClick={() => goSlide(-1)}
+                        className="absolute left-2 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur-md transition-all hover:scale-110 hover:bg-black/70 active:scale-95 md:flex"
+                    >
+                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-2xl">
+                            chevron_left
+                        </span>
+                    </button>
+                    <button
+                        type="button"
+                        aria-label="Siguiente"
+                        onClick={() => goSlide(1)}
+                        className="absolute right-2 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur-md transition-all hover:scale-110 hover:bg-black/70 active:scale-95 md:flex"
+                    >
+                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-2xl">
+                            chevron_right
+                        </span>
+                    </button>
+
                     {/* Indicadores de Carrusel */}
-                    <div className="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 gap-3">
+                    <div className="absolute bottom-5 left-1/2 z-30 flex -translate-x-1/2 gap-2.5 md:bottom-8 md:gap-3">
                         {slides.map((_, idx) => (
                             <button
                                 key={idx}
@@ -229,7 +276,7 @@ export default function StoreIndex({
                             className="flex items-center gap-1 text-sm font-bold text-[#855300] transition-transform hover:translate-x-2"
                         >
                             Ver Catálogo Completo{' '}
-                            <span className="material-symbols-outlined text-[18px]">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-[18px]">
                                 arrow_forward
                             </span>
                         </Link>
@@ -243,7 +290,7 @@ export default function StoreIndex({
                             }
                             className="absolute -left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                         >
-                            <span className="material-symbols-outlined text-xl font-bold text-black">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold text-black">
                                 chevron_left
                             </span>
                         </button>
@@ -264,7 +311,7 @@ export default function StoreIndex({
                                         <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-[#fea619]/10 transition-all duration-700 group-hover:scale-150 group-hover:bg-[#fea619]/25"></div>
 
                                         <div className="relative flex items-start justify-between">
-                                            <span className="material-symbols-outlined text-4xl text-[#fea619] transition-transform group-hover:rotate-6 group-hover:scale-110">
+                                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-4xl text-[#fea619] transition-transform group-hover:rotate-6 group-hover:scale-110">
                                                 {
                                                     categoryIcons[
                                                         idx %
@@ -287,7 +334,7 @@ export default function StoreIndex({
                                             </h3>
                                             <span className="mt-1 flex items-center gap-1 text-xs font-bold text-[#fea619] transition-all group-hover:gap-2">
                                                 Explorar{' '}
-                                                <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">
+                                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">
                                                     chevron_right
                                                 </span>
                                             </span>
@@ -310,7 +357,7 @@ export default function StoreIndex({
                             }
                             className="absolute -right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                         >
-                            <span className="material-symbols-outlined text-xl font-bold text-black">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold text-black">
                                 chevron_right
                             </span>
                         </button>
@@ -335,7 +382,7 @@ export default function StoreIndex({
                     <div className="relative mx-auto max-w-[1280px] px-6">
                         <div className="mx-auto max-w-3xl bg-[#eef1f4] px-6 py-8 text-center shadow-lg [clip-path:polygon(5%_0,95%_0,100%_100%,0_100%)] sm:px-16">
                             <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3.5 py-1 text-[10px] font-black uppercase tracking-widest text-[#855300] shadow-sm">
-                                <span className="material-symbols-outlined text-sm">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                     tv
                                 </span>
                                 Solo Racks
@@ -369,7 +416,7 @@ export default function StoreIndex({
                             className="flex items-center gap-1.5 text-sm font-bold text-[#ef4444] transition-all hover:gap-2.5 hover:underline"
                         >
                             Ver todos los productos{' '}
-                            <span className="material-symbols-outlined text-base">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-base">
                                 chevron_right
                             </span>
                         </Link>
@@ -382,7 +429,7 @@ export default function StoreIndex({
                             onClick={() => scrollSlider(rackCarouselRef, -1)}
                             className="absolute -left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                         >
-                            <span className="material-symbols-outlined text-xl font-bold">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold">
                                 chevron_left
                             </span>
                         </button>
@@ -450,7 +497,7 @@ export default function StoreIndex({
                                                         )}
                                                         className="rounded-xl bg-black p-2.5 text-white transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                                                     >
-                                                        <span className="material-symbols-outlined text-sm">
+                                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                                             visibility
                                                         </span>
                                                     </Link>
@@ -474,7 +521,7 @@ export default function StoreIndex({
                             onClick={() => scrollSlider(rackCarouselRef, 1)}
                             className="absolute -right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                         >
-                            <span className="material-symbols-outlined text-xl font-bold">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold">
                                 chevron_right
                             </span>
                         </button>
@@ -500,7 +547,7 @@ export default function StoreIndex({
                         {/* Encabezado compacto */}
                         <div className="mb-12 flex flex-col items-center text-center lg:mb-14">
                             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-5 py-2 text-[11px] font-black uppercase tracking-widest text-[#fea619] shadow-lg">
-                                <span className="material-symbols-outlined text-base">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-base">
                                     verified
                                 </span>
                                 Servicio de Instalación Profesional
@@ -519,19 +566,19 @@ export default function StoreIndex({
 
                                 <div className="group relative flex min-h-[250px] flex-col justify-between overflow-hidden rounded-[28px] bg-gradient-to-br from-[#ffb95f] via-[#fea619] to-[#e8890d] px-9 py-12 shadow-2xl shadow-[#fea619]/30">
                                     {/* Marca de agua de TV */}
-                                    <span className="material-symbols-outlined pointer-events-none absolute -bottom-8 -right-6 text-[140px] text-white/15 transition-transform duration-500 group-hover:rotate-6 group-hover:scale-110">
+                                    <span translate="no" aria-hidden="true" className="material-symbols-outlined pointer-events-none absolute -bottom-8 -right-6 text-[140px] text-white/15 transition-transform duration-500 group-hover:rotate-6 group-hover:scale-110">
                                         tv
                                     </span>
                                     <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-white/20 blur-2xl"></div>
 
                                     <div className="relative flex items-center justify-between">
                                         <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 text-white shadow-inner transition-transform group-hover:rotate-6 group-hover:scale-110">
-                                            <span className="material-symbols-outlined text-2xl">
+                                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-2xl">
                                                 hardware
                                             </span>
                                         </span>
                                         <span className="flex items-center gap-1 rounded-full bg-black/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow">
-                                            <span className="material-symbols-outlined text-[12px]">
+                                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-[12px]">
                                                 verified
                                             </span>
                                             Garantizado
@@ -596,7 +643,7 @@ export default function StoreIndex({
                                 <div className="mt-8 space-y-4 lg:mt-9">
                                     <div className="flex items-center gap-3 border-b border-white/15 pb-4 lg:justify-end">
                                         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fea619]/15 text-[#fea619]">
-                                            <span className="material-symbols-outlined text-sm">
+                                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                                 check
                                             </span>
                                         </span>
@@ -606,7 +653,7 @@ export default function StoreIndex({
                                     </div>
                                     <div className="flex items-center gap-3 lg:justify-end">
                                         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fea619]/15 text-[#fea619]">
-                                            <span className="material-symbols-outlined text-sm">
+                                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                                 check
                                             </span>
                                         </span>
@@ -636,7 +683,7 @@ export default function StoreIndex({
                     <div className="relative mx-auto max-w-[1280px] px-6">
                         <div className="mx-auto max-w-3xl bg-[#eef1f4] px-6 py-8 text-center shadow-lg [clip-path:polygon(5%_0,95%_0,100%_100%,0_100%)] sm:px-16">
                             <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3.5 py-1 text-[10px] font-black uppercase tracking-widest text-[#855300] shadow-sm">
-                                <span className="material-symbols-outlined text-sm">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                     hardware
                                 </span>
                                 Ferretería CMA
@@ -670,7 +717,7 @@ export default function StoreIndex({
                             className="flex items-center gap-1.5 text-sm font-bold text-[#ef4444] transition-all hover:gap-2.5 hover:underline"
                         >
                             Ver todos los productos{' '}
-                            <span className="material-symbols-outlined text-base">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-base">
                                 chevron_right
                             </span>
                         </Link>
@@ -684,7 +731,7 @@ export default function StoreIndex({
                             }
                             className="absolute -left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                         >
-                            <span className="material-symbols-outlined text-xl font-bold text-black">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold text-black">
                                 chevron_left
                             </span>
                         </button>
@@ -752,7 +799,7 @@ export default function StoreIndex({
                                                         )}
                                                         className="rounded-xl bg-black p-2.5 text-white transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                                                     >
-                                                        <span className="material-symbols-outlined text-sm">
+                                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                                             visibility
                                                         </span>
                                                     </Link>
@@ -778,7 +825,7 @@ export default function StoreIndex({
                             }
                             className="absolute -right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                         >
-                            <span className="material-symbols-outlined text-xl font-bold text-black">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold text-black">
                                 chevron_right
                             </span>
                         </button>
@@ -793,7 +840,7 @@ export default function StoreIndex({
                                 onClick={() => setShowHelpWidget(false)}
                                 className="absolute -right-2.5 -top-2.5 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-slate-300 bg-white shadow-md transition-transform hover:scale-110"
                             >
-                                <span className="material-symbols-outlined text-sm text-slate-600">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm text-slate-600">
                                     close
                                 </span>
                             </button>
@@ -817,7 +864,7 @@ export default function StoreIndex({
                     <div className="mb-8 flex items-start justify-between gap-4 sm:items-center">
                         <div>
                             <span className="inline-flex items-center gap-2 rounded-full border border-[#fea619]/30 bg-[#fea619]/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-[#855300]">
-                                <span className="material-symbols-outlined text-sm">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                     local_fire_department
                                 </span>
                                 Top Ventas
@@ -831,7 +878,7 @@ export default function StoreIndex({
                             className="flex shrink-0 items-center gap-1.5 text-sm font-bold text-[#ef4444] transition-all hover:gap-2.5 hover:underline"
                         >
                             Ver todos los productos{' '}
-                            <span className="material-symbols-outlined text-base">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-base">
                                 chevron_right
                             </span>
                         </Link>
@@ -845,7 +892,7 @@ export default function StoreIndex({
                             }
                             className="absolute -left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                         >
-                            <span className="material-symbols-outlined text-xl font-bold text-black">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold text-black">
                                 chevron_left
                             </span>
                         </button>
@@ -916,7 +963,7 @@ export default function StoreIndex({
                                                         )}
                                                         className="rounded-xl bg-black p-2.5 text-white transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                                                     >
-                                                        <span className="material-symbols-outlined text-sm">
+                                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                                             visibility
                                                         </span>
                                                     </Link>
@@ -940,7 +987,7 @@ export default function StoreIndex({
                             onClick={() => scrollSlider(featuredCarouselRef, 1)}
                             className="absolute -right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-[#fea619] hover:text-black active:scale-95"
                         >
-                            <span className="material-symbols-outlined text-xl font-bold text-black">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold text-black">
                                 chevron_right
                             </span>
                         </button>
@@ -956,7 +1003,7 @@ export default function StoreIndex({
                             {/* Columna Texto */}
                             <div className="relative">
                                 <span className="inline-flex items-center gap-2 rounded-full border border-[#fea619]/30 bg-[#fea619]/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-widest text-[#855300]">
-                                    <span className="material-symbols-outlined text-sm">
+                                    <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                         volunteer_activism
                                     </span>
                                     Nuestro Compromiso
@@ -985,7 +1032,7 @@ export default function StoreIndex({
                                             className="flex items-start gap-3"
                                         >
                                             <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fea619]/15 text-[#855300]">
-                                                <span className="material-symbols-outlined text-sm">
+                                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                                     check
                                                 </span>
                                             </span>
@@ -1001,7 +1048,7 @@ export default function StoreIndex({
                                     className="mt-9 inline-flex items-center gap-2.5 rounded-full bg-black px-7 py-3.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg transition-all hover:scale-105 hover:bg-[#fea619] hover:text-black active:scale-95"
                                 >
                                     Explorar Catálogo
-                                    <span className="material-symbols-outlined text-base">
+                                    <span translate="no" aria-hidden="true" className="material-symbols-outlined text-base">
                                         arrow_forward
                                     </span>
                                 </Link>
@@ -1011,7 +1058,7 @@ export default function StoreIndex({
                             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                                 <div className="group rounded-2xl border border-slate-200 bg-[#f7f9fb] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
                                     <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fea619]/15 text-[#855300] transition-transform group-hover:rotate-6 group-hover:scale-110">
-                                        <span className="material-symbols-outlined text-2xl">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-2xl">
                                             verified
                                         </span>
                                     </span>
@@ -1043,7 +1090,7 @@ export default function StoreIndex({
 
                                 <div className="group rounded-2xl border border-slate-200 bg-[#f7f9fb] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
                                     <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fea619]/15 text-[#855300] transition-transform group-hover:rotate-6 group-hover:scale-110">
-                                        <span className="material-symbols-outlined text-2xl">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-2xl">
                                             local_shipping
                                         </span>
                                     </span>
@@ -1058,7 +1105,7 @@ export default function StoreIndex({
 
                                 <div className="group rounded-2xl border border-slate-200 bg-[#f7f9fb] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
                                     <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fea619]/15 text-[#855300] transition-transform group-hover:rotate-6 group-hover:scale-110">
-                                        <span className="material-symbols-outlined text-2xl">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-2xl">
                                             verified_user
                                         </span>
                                     </span>
@@ -1073,7 +1120,7 @@ export default function StoreIndex({
 
                                 <div className="group rounded-2xl border border-slate-200 bg-[#f7f9fb] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
                                     <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fea619]/15 text-[#855300] transition-transform group-hover:rotate-6 group-hover:scale-110">
-                                        <span className="material-symbols-outlined text-2xl">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-2xl">
                                             handyman
                                         </span>
                                     </span>

@@ -39,6 +39,12 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
     const megaTimer = useRef(null);
 
     const [activeMainCat, setActiveMainCat] = useState(null);
+    const [mobileOpenCat, setMobileOpenCat] = useState(null);
+    const [pinnedCat, setPinnedCat] = useState(null);
+    const [hoverCat, setHoverCat] = useState(null);
+    const [hoverEnabled, setHoverEnabled] = useState(true);
+    const megaBoxRef = useRef(null);
+    const catsRowRef = useRef(null);
 
     const urlParams = new URLSearchParams(window.location.search);
     const activeNavCat = urlParams.get('category') || '';
@@ -120,7 +126,66 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
 
     const closeMega = () => {
         setMegaOpen(false);
+        setMobileOpenCat(null);
         megaTimer.current = setTimeout(() => setMegaRendered(false), 200);
+    };
+
+    const toggleMega = () => {
+        if (megaOpen) {
+            closeMega();
+        } else {
+            openMega();
+        }
+    };
+
+    const handleProductsClick = (e) => {
+        e.preventDefault();
+        toggleMega();
+    };
+
+    useEffect(() => {
+        const disableHoverOnTouch = () => setHoverEnabled(false);
+        window.addEventListener('touchstart', disableHoverOnTouch, {
+            once: true,
+            passive: true,
+        });
+        return () =>
+            window.removeEventListener('touchstart', disableHoverOnTouch);
+    }, []);
+
+    useEffect(() => {
+        const handleMegaOutside = (e) => {
+            if (
+                megaBoxRef.current &&
+                !megaBoxRef.current.contains(e.target)
+            ) {
+                setMegaOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleMegaOutside);
+        return () =>
+            document.removeEventListener('mousedown', handleMegaOutside);
+    }, []);
+
+    useEffect(() => {
+        const handleCatsOutside = (e) => {
+            if (
+                catsRowRef.current &&
+                !catsRowRef.current.contains(e.target)
+            ) {
+                setPinnedCat(null);
+            }
+        };
+        document.addEventListener('mousedown', handleCatsOutside);
+        return () =>
+            document.removeEventListener('mousedown', handleCatsOutside);
+    }, []);
+
+    const handleCatToggle = (e, cat) => {
+        if (cat?.children?.length) {
+            e.preventDefault();
+            setPinnedCat((cur) => (cur === cat.id ? null : cat.id));
+        }
     };
 
     const SubRow = ({ cat, compact = false }) => {
@@ -161,27 +226,30 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
         <>
             {/* 1. Cabecera Principal (Main Header) */}
             <header className="relative z-50 w-full border-b border-slate-200 bg-white">
-                <div className="mx-auto grid max-w-[1280px] grid-cols-1 items-center gap-3 px-4 py-3 md:h-20 md:grid-cols-[minmax(0,1fr)_minmax(0,42rem)_minmax(0,1fr)] md:gap-4 md:px-6 md:py-0 lg:gap-6">
+                <div className="mx-auto grid max-w-[1280px] grid-cols-1 items-center gap-3 px-4 py-3 md:h-20 md:grid-cols-[auto_minmax(0,1fr)] md:gap-5 md:px-6 md:py-0 lg:gap-6">
                     {/* Izquierda: Logo Principal */}
                     <Link
-                        href={route('store.index')}
+                        href={route('store.index')} translate="no"
                         className="group flex items-center gap-2 justify-self-start text-2xl font-black uppercase tracking-tight text-black"
                     >
-                        <span className="rounded-lg bg-[#fea619] px-2.5 py-1 text-base text-black shadow-sm transition-transform group-hover:scale-105">
+                        <span translate="no" aria-hidden="true" className="rounded-lg bg-[#fea619] px-2.5 py-1 text-base text-black shadow-sm transition-transform group-hover:scale-105">
                             CMA
                         </span>
-                        <span className="font-extrabold tracking-wider transition-colors group-hover:text-[#855300]">
+                        <span translate="no" className="font-extrabold tracking-wider transition-colors group-hover:text-[#855300]">
                             STORE
                         </span>
                     </Link>
 
                     {/* Centro: Barra de búsqueda ancha centrada */}
-                    <div ref={searchBoxRef} className="relative w-full">
+                    <div
+                        ref={searchBoxRef}
+                        className="relative w-full justify-self-stretch md:max-w-[42rem] md:justify-self-center"
+                    >
                         <form
                             onSubmit={handleSearchSubmit}
                             className="flex items-center rounded-full border border-slate-300 bg-slate-50 p-1 shadow-inner transition-all focus-within:border-[#fea619] focus-within:ring-2 focus-within:ring-[#fea619]/20"
                         >
-                            <span className="material-symbols-outlined pl-4 text-xl text-slate-400">
+                            <span translate="no" aria-hidden="true" className="material-symbols-outlined pl-4 text-xl text-slate-400">
                                 search
                             </span>
                             <input
@@ -195,7 +263,7 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                                 type="submit"
                                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fea619] text-black shadow-md transition-transform hover:scale-105 hover:bg-[#ffb95f] active:scale-95"
                             >
-                                <span className="material-symbols-outlined text-xl font-bold">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl font-bold">
                                     search
                                 </span>
                             </button>
@@ -265,7 +333,7 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
               className="flex items-center gap-3 bg-[#fea619]/10 hover:bg-[#fea619]/20 border border-[#fea619]/30 px-4 py-2 rounded-full transition-all group shadow-sm"
             >
               <div className="relative w-9 h-9 bg-[#fea619] text-black rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                <span className="material-symbols-outlined text-lg font-bold">shopping_bag</span>
+                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-lg font-bold">shopping_bag</span>
                 <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
                   0
                 </span>
@@ -281,20 +349,21 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                     <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-2 px-4 text-xs font-bold md:px-6">
                         {/* Botón Hamburger "Productos" */}
                         <div
+                            ref={megaBoxRef}
                             className="relative shrink-0 py-1"
-                            onMouseEnter={openMega}
-                            onMouseLeave={closeMega}
+                            onMouseEnter={hoverEnabled ? openMega : undefined}
+                            onMouseLeave={hoverEnabled ? closeMega : undefined}
                         >
                             <Link
                                 href={route('store.catalog')}
+                                onClick={handleProductsClick}
                                 className="flex cursor-pointer items-center gap-2 rounded-xl bg-[#fea619] px-4 py-2 font-black uppercase tracking-wider text-black shadow-md transition-all hover:bg-[#ffb95f]"
                             >
-                                <span className="material-symbols-outlined text-lg font-black">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-lg font-black">
                                     menu
                                 </span>
                                 <span>Productos</span>
-                                <span
-                                    className={`material-symbols-outlined text-sm transition-transform duration-200 ${megaOpen ? 'rotate-180' : ''}`}
+                                <span translate="no" aria-hidden="true" className={`material-symbols-outlined text-sm transition-transform duration-200 ${megaOpen ? 'rotate-180' : ''}`}
                                 >
                                     expand_more
                                 </span>
@@ -314,7 +383,131 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                                             : 'none',
                                     }}
                                 >
-                                    <div className="flex max-h-[70vh] overflow-hidden">
+                                    {/* Versión Móvil: acordeón de categorías con subcategorías dentro del recuadro */}
+                                    <div className="no-scrollbar max-h-[78vh] overflow-y-auto p-2 md:hidden">
+                                        <div className="mb-1 flex items-center justify-between gap-2 rounded-xl bg-[#0f172a] px-3.5 py-3 text-white">
+                                            <Link
+                                                href={route('store.catalog')}
+                                                onClick={closeMega}
+                                                className="flex items-center gap-2 text-xs font-black uppercase tracking-wider"
+                                            >
+                                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-lg">
+                                                    storefront
+                                                </span>
+                                                Ver todo el catálogo
+                                            </Link>
+                                            <button
+                                                type="button"
+                                                aria-label="Cerrar menú"
+                                                onClick={closeMega}
+                                                className="cursor-pointer rounded-lg p-1 transition-colors hover:bg-white/15"
+                                            >
+                                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-lg">
+                                                    close
+                                                </span>
+                                            </button>
+                                        </div>
+                                        {categorias.map((cat) => {
+                                            const isOpen =
+                                                mobileOpenCat === cat.id;
+                                            const hasSub =
+                                                cat.children?.length > 0;
+                                            return (
+                                                <div key={cat.id} className="mb-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setMobileOpenCat(
+                                                                isOpen
+                                                                    ? null
+                                                                    : cat.id,
+                                                            )
+                                                        }
+                                                        className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-3.5 py-3 text-left transition-all ${
+                                                            isOpen
+                                                                ? 'bg-[#fea619]/15 font-black text-[#855300]'
+                                                                : 'text-slate-700 hover:bg-slate-100'
+                                                        }`}
+                                                    >
+                                                        <span className="flex min-w-0 items-center gap-3">
+                                                            <span translate="no" aria-hidden="true" className={`material-symbols-outlined text-lg ${isOpen ? 'text-[#fea619]' : 'text-slate-400'} shrink-0`}
+                                                            >
+                                                                {iconOf(cat)}
+                                                            </span>
+                                                            <span className="truncate text-xs">
+                                                                {cat.nombre}
+                                                            </span>
+                                                        </span>
+                                                        <span translate="no" aria-hidden="true" className={`material-symbols-outlined shrink-0 text-base transition-transform ${isOpen ? 'rotate-90 text-[#855300]' : 'text-slate-300'}`}
+                                                        >
+                                                            chevron_right
+                                                        </span>
+                                                    </button>
+                                                    {isOpen && (
+                                                        <div className="mb-1 rounded-xl border border-slate-100 bg-slate-50/70 p-2">
+                                                            <Link
+                                                                href={route(
+                                                                    'store.catalog',
+                                                                    {
+                                                                        category:
+                                                                            cat.id,
+                                                                    },
+                                                                )}
+                                                                onClick={
+                                                                    closeMega
+                                                                }
+                                                                className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs font-black text-[#855300] hover:bg-white"
+                                                            >
+                                                                Ver todo en{' '}
+                                                                {cat.nombre}
+                                                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
+                                                                    arrow_forward
+                                                                </span>
+                                                            </Link>
+                                                            {hasSub && (
+                                                                <div className="mt-1">
+                                                                    {cat.children.map(
+                                                                        (
+                                                                            sub,
+                                                                        ) => (
+                                                                            <Link
+                                                                                key={
+                                                                                    sub.id
+                                                                                }
+                                                                                href={route(
+                                                                                    'store.catalog',
+                                                                                    {
+                                                                                        category:
+                                                                                            sub.id,
+                                                                                    },
+                                                                                )}
+                                                                                onClick={
+                                                                                    closeMega
+                                                                                }
+                                                                                className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-white hover:text-black"
+                                                                            >
+                                                                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm text-slate-300">
+                                                                                    chevron_right
+                                                                                </span>
+                                                                                <span className="truncate">
+                                                                                    {
+                                                                                        sub.nombre
+                                                                                    }
+                                                                                </span>
+                                                                            </Link>
+                                                                        ),
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Versión Desktop: panel lateral izquierdo + panel derecho en 4 columnas */}
+                                    <div className="hidden max-h-[70vh] overflow-hidden md:flex">
                                         {/* Panel Lateral Izquierdo: Categorías Principales */}
                                         <aside className="w-68 no-scrollbar shrink-0 overflow-y-auto rounded-l-2xl border-r border-slate-200 bg-[#f4f6f8] p-3 sm:w-72">
                                             {categorias.map((cat) => {
@@ -335,8 +528,7 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                                                         }`}
                                                     >
                                                         <span className="flex min-w-0 items-center gap-3">
-                                                            <span
-                                                                className={`material-symbols-outlined text-lg ${active ? 'text-[#fea619]' : 'text-slate-400'} shrink-0`}
+                                                            <span translate="no" aria-hidden="true" className={`material-symbols-outlined text-lg ${active ? 'text-[#fea619]' : 'text-slate-400'} shrink-0`}
                                                             >
                                                                 {iconOf(cat)}
                                                             </span>
@@ -344,8 +536,7 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                                                                 {cat.nombre}
                                                             </span>
                                                         </span>
-                                                        <span
-                                                            className={`material-symbols-outlined shrink-0 text-base ${active ? 'text-[#855300]' : 'text-slate-300 group-hover:text-slate-500'}`}
+                                                        <span translate="no" aria-hidden="true" className={`material-symbols-outlined shrink-0 text-base ${active ? 'text-[#855300]' : 'text-slate-300 group-hover:text-slate-500'}`}
                                                         >
                                                             chevron_right
                                                         </span>
@@ -358,7 +549,7 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                                         <div className="no-scrollbar flex-1 overflow-y-auto p-6">
                                             <div className="mb-6 flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
                                                 <h3 className="flex items-center gap-2.5 text-sm font-black uppercase tracking-widest text-[#855300]">
-                                                    <span className="material-symbols-outlined text-xl text-[#fea619]">
+                                                    <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xl text-[#fea619]">
                                                         {iconOf(block)}
                                                     </span>
                                                     {block.nombre}
@@ -371,7 +562,7 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                                                     className="flex shrink-0 items-center gap-1 text-xs font-bold text-slate-600 hover:text-[#855300]"
                                                 >
                                                     Ver todo{' '}
-                                                    <span className="material-symbols-outlined text-sm">
+                                                    <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                                         arrow_forward
                                                     </span>
                                                 </Link>
@@ -488,7 +679,10 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                         </div>
 
                         {/* Categorías Principales Horizontales con Dropdown Simple */}
-                        <div className="hidden flex-1 items-center gap-1 overflow-visible px-2 py-1 md:flex">
+                        <div
+                                ref={catsRowRef}
+                                className="hidden flex-1 items-center gap-1 overflow-visible px-2 py-1 md:flex"
+                            >
                             <Link
                                 href={route('store.catalog')}
                                 className="shrink-0 whitespace-nowrap px-3 py-1.5 text-slate-200 transition-colors hover:text-[#fea619]"
@@ -499,15 +693,37 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                                 categorias.slice(0, 4).map((cat) => {
                                     const isActive =
                                         activeNavCat === String(cat.id);
+                                    const isCatOpen =
+                                        hoverCat === cat.id ||
+                                        pinnedCat === cat.id;
                                     return (
                                         <div
                                             key={cat.id}
                                             className="group/cat relative shrink-0"
+                                            onMouseEnter={
+                                                hoverEnabled
+                                                    ? () =>
+                                                          setHoverCat(
+                                                              cat.id,
+                                                          )
+                                                    : undefined
+                                            }
+                                            onMouseLeave={
+                                                hoverEnabled
+                                                    ? () =>
+                                                          setHoverCat(
+                                                              null,
+                                                          )
+                                                    : undefined
+                                            }
                                         >
                                             <Link
                                                 href={route('store.catalog', {
                                                     category: cat.id,
                                                 })}
+                                                onClick={(e) =>
+                                                    handleCatToggle(e, cat)
+                                                }
                                                 className={`flex cursor-pointer items-center gap-1 whitespace-nowrap px-3 py-1.5 text-[11px] uppercase tracking-wider transition-colors ${
                                                     isActive
                                                         ? 'text-[#fea619]'
@@ -517,8 +733,7 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                                                 <span>{cat.nombre}</span>
                                                 {cat.children &&
                                                     cat.children.length > 0 && (
-                                                        <span
-                                                            className={`material-symbols-outlined text-[14px] transition-all ${isActive ? 'text-[#4ade80]' : 'text-slate-400 group-hover/cat:rotate-180 group-hover/cat:text-[#fea619]'}`}
+                                                        <span translate="no" aria-hidden="true" className={`material-symbols-outlined text-[14px] transition-all ${isCatOpen ? 'rotate-180 text-[#fea619]' : isActive ? 'text-[#4ade80]' : 'text-slate-400 group-hover/cat:rotate-180 group-hover/cat:text-[#fea619]'}`}
                                                         >
                                                             expand_more
                                                         </span>
@@ -528,7 +743,9 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                                             {/* Dropdown simple: lista vertical de solo texto */}
                                             {cat.children &&
                                                 cat.children.length > 0 && (
-                                                    <div className="animate-in fade-in slide-in-from-top-2 absolute left-0 top-full z-50 hidden w-56 rounded-md border border-slate-200 bg-white pt-2 text-slate-800 shadow-xl duration-150 group-hover/cat:block">
+                                                    <div
+                                                        className={`animate-in fade-in slide-in-from-top-2 absolute left-0 top-full z-50 w-56 rounded-md border border-slate-200 bg-white pt-2 text-slate-800 shadow-xl duration-150 ${isCatOpen ? 'block' : 'hidden'}`}
+                                                    >
                                                         <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-xl">
                                                             <Link
                                                                 href={route(
@@ -546,7 +763,7 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                                                             >
                                                                 Todos
                                                                 {isActive && (
-                                                                    <span className="material-symbols-outlined text-sm text-[#4ade80]">
+                                                                    <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm text-[#4ade80]">
                                                                         check
                                                                     </span>
                                                                 )}
@@ -583,7 +800,7 @@ export default function StoreHeader({ categorias = [], initialSearch = '' }) {
                                 className="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap rounded-xl bg-white/10 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-white transition-all hover:bg-[#fea619] hover:text-black"
                             >
                                 <span>Otros</span>
-                                <span className="material-symbols-outlined text-sm">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                     arrow_forward
                                 </span>
                             </Link>

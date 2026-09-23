@@ -351,8 +351,7 @@ export default function StoreCatalog({
             <span className="text-xs font-black uppercase tracking-wider text-slate-500">
                 {label}
             </span>
-            <span
-                className={`material-symbols-outlined text-base text-slate-400 transition-transform duration-200 ${sectionIsOpen(key) ? 'rotate-180' : ''}`}
+            <span translate="no" aria-hidden="true" className={`material-symbols-outlined text-base text-slate-400 transition-transform duration-200 ${sectionIsOpen(key) ? 'rotate-180' : ''}`}
             >
                 expand_more
             </span>
@@ -434,8 +433,7 @@ export default function StoreCatalog({
                                             {cat.nombre}
                                         </span>
                                         {cat.children?.length > 0 && (
-                                            <span
-                                                className={`material-symbols-outlined shrink-0 text-sm text-slate-400 transition-transform duration-200 ${expandedCat === cat.id ? 'rotate-180' : ''}`}
+                                            <span translate="no" aria-hidden="true" className={`material-symbols-outlined shrink-0 text-sm text-slate-400 transition-transform duration-200 ${expandedCat === cat.id ? 'rotate-180' : ''}`}
                                             >
                                                 expand_more
                                             </span>
@@ -705,7 +703,7 @@ export default function StoreCatalog({
                                     className="flex flex-col items-center gap-1.5 text-center"
                                 >
                                     <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-white shadow-lg ring-2 ring-white/30 sm:h-11 sm:w-11">
-                                        <span className="material-symbols-outlined text-lg sm:text-xl">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-lg sm:text-xl">
                                             {b.icon}
                                         </span>
                                     </span>
@@ -726,7 +724,7 @@ export default function StoreCatalog({
                             {activeCategoryName && (
                                 <div className="mb-1 border-b border-slate-100 pb-3">
                                     <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                        <span className="material-symbols-outlined text-sm text-[#855300]">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm text-[#855300]">
                                             category
                                         </span>
                                         {catType === 'parent' || theme
@@ -741,7 +739,7 @@ export default function StoreCatalog({
 
                             <div className="mb-1 flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
                                 <h3 className="flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-slate-600">
-                                    <span className="material-symbols-outlined text-base text-[#855300]">
+                                    <span translate="no" aria-hidden="true" className="material-symbols-outlined text-base text-[#855300]">
                                         tune
                                     </span>
                                     Filtros
@@ -751,7 +749,7 @@ export default function StoreCatalog({
                                         onClick={cleanFilters}
                                         className="flex items-center gap-1 text-[11px] font-bold text-red-500 hover:underline"
                                     >
-                                        <span className="material-symbols-outlined text-sm">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                             filter_alt_off
                                         </span>
                                         Limpiar
@@ -772,7 +770,7 @@ export default function StoreCatalog({
                                                 className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-700 transition-colors hover:bg-red-50 hover:text-red-600"
                                             >
                                                 {chip.label}
-                                                <span className="material-symbols-outlined text-xs">
+                                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xs">
                                                     close
                                                 </span>
                                             </button>
@@ -818,7 +816,7 @@ export default function StoreCatalog({
                                         onClick={() => setViewMode('grid')}
                                         className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg transition-all ${viewMode === 'grid' ? 'bg-black text-white shadow-md' : 'text-slate-400 hover:text-black'}`}
                                     >
-                                        <span className="material-symbols-outlined text-lg">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-lg">
                                             grid_view
                                         </span>
                                     </button>
@@ -826,7 +824,7 @@ export default function StoreCatalog({
                                         onClick={() => setViewMode('list')}
                                         className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg transition-all ${viewMode === 'list' ? 'bg-black text-white shadow-md' : 'text-slate-400 hover:text-black'}`}
                                     >
-                                        <span className="material-symbols-outlined text-lg">
+                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-lg">
                                             view_list
                                         </span>
                                     </button>
@@ -891,7 +889,7 @@ export default function StoreCatalog({
                                                             </span>
                                                         </div>
                                                         <p className="mt-1.5 flex items-center gap-1 text-[10px] text-slate-500">
-                                                            <span className="material-symbols-outlined text-xs">
+                                                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xs">
                                                                 local_shipping
                                                             </span>
                                                             Envío a todo el país
@@ -912,7 +910,7 @@ export default function StoreCatalog({
                                                                 )}
                                                                 className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-black px-3 py-2 text-[10px] font-bold text-white transition-all hover:bg-[#fea619] hover:text-black"
                                                             >
-                                                                <span className="material-symbols-outlined text-sm">
+                                                                <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                                                     visibility
                                                                 </span>
                                                                 Ver
@@ -981,7 +979,7 @@ export default function StoreCatalog({
                                                         </span>
                                                     </div>
                                                     <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
-                                                        <span className="material-symbols-outlined text-xs">
+                                                        <span translate="no" aria-hidden="true" className="material-symbols-outlined text-xs">
                                                             local_shipping
                                                         </span>
                                                         Envío a todo el país ·
@@ -1002,7 +1000,7 @@ export default function StoreCatalog({
                                                             )}
                                                             className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-black px-4 py-2 text-xs font-bold text-white transition-all hover:bg-[#fea619] hover:text-black"
                                                         >
-                                                            <span className="material-symbols-outlined text-sm">
+                                                            <span translate="no" aria-hidden="true" className="material-symbols-outlined text-sm">
                                                                 visibility
                                                             </span>
                                                             Ver Producto
@@ -1016,7 +1014,7 @@ export default function StoreCatalog({
                             )
                         ) : (
                             <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center">
-                                <span className="material-symbols-outlined mb-3 block text-5xl text-slate-300">
+                                <span translate="no" aria-hidden="true" className="material-symbols-outlined mb-3 block text-5xl text-slate-300">
                                     search_off
                                 </span>
                                 <p className="font-bold text-slate-500">
