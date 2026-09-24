@@ -9,7 +9,7 @@ const CONTENIDO = {
         sections: [
             {
                 titulo: '1. Responsable del tratamiento',
-                texto: 'CMA Store (razón social y RUC pendientes de completar). Los datos personales proporcionados a través de este sitio web serán tratados por el responsable de manera confidencial y conforme a la normativa peruana de protección de datos personales (Ley N.º 29733 y su Reglamento).',
+                texto: 'CMA Store. Los datos personales proporcionados a través de este sitio web serán tratados por el responsable de manera confidencial y conforme a la normativa peruana de protección de datos personales (Ley N.º 29733 y su Reglamento).',
             },
             {
                 titulo: '2. Datos que tratamos',
@@ -69,7 +69,7 @@ const CONTENIDO = {
         sections: [
             {
                 titulo: '1. Titular del sitio',
-                texto: 'Titular: CMA Store — Razón social: (PENDIENTE). RUC: (PENDIENTE). Domicilio: San Juan de Miraflores, Av. Salvador Allende 429 - Tienda Principal CMA. Contacto: cma.tiendaoficial@gmail.com · WhatsApp 941 117 410.',
+                texto: 'Titular: CMA Store. Domicilio: San Juan de Miraflores, Av. Salvador Allende 429 - Tienda Principal CMA. Contacto: cma.tiendaoficial@gmail.com · WhatsApp 941 117 410.',
             },
             {
                 titulo: '2. Propiedad intelectual',
